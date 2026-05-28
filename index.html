@@ -727,6 +727,39 @@
     }
 
     /** @param {Record<string, string>[]} rows */
+    function computeSectorStageBreakdown(rows) {
+      const industries = getDistinctIndustries(rows);
+      const breakdown = [];
+
+      industries.forEach((industry) => {
+        FUNNEL_STAGES.forEach((stage) => {
+          const stageRows = rows.filter((row) =>
+            row["Funding Type"] === stage && row._industries.includes(industry)
+          );
+          const count = stageRows.length;
+          if (count === 0) return;
+
+          const amounts = stageRows
+            .map((row) => parseMoneyRaised(row["Money Raised"]))
+            .filter(Number.isFinite);
+
+          const total = amounts.reduce((sum, value) => sum + value, 0);
+          const medianValue = median(amounts);
+
+          breakdown.push({
+            industry,
+            stage,
+            count,
+            median_usd: Number.isFinite(medianValue) ? Math.round(medianValue) : null,
+            total_capital_usd: Math.round(total),
+          });
+        });
+      });
+
+      return breakdown;
+    }
+
+    /** @param {Record<string, string>[]} rows */
     function computeByCountry(rows) {
       const countries = ["United States", "Canada"];
       return countries.map((country) => {
@@ -784,6 +817,7 @@
         },
         funnel,
         sectors,
+        sector_stage_breakdown: computeSectorStageBreakdown(rows),
         top_metros: metros,
         by_country: computeByCountry(rows),
       };
