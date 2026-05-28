@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VC Funding Funnel — AI & SaaS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f4f2ee;
+      --surface: #ffffff;
+      --ink: #1a1c1e;
+      --ink-muted: #5c6168;
+      --ink-faint: #8b9199;
+      --border: #e4e0d8;
+      --accent: #0d6e6e;
+      --accent-soft: rgba(13, 110, 110, 0.08);
+      --accent-bar: rgba(13, 110, 110, 0.88);
+      --line: #b85c38;
+      --line-soft: rgba(184, 92, 56, 0.12);
+      --shadow: 0 1px 2px rgba(26, 28, 30, 0.04), 0 8px 24px rgba(26, 28, 30, 0.06);
+      --radius: 12px;
+      --font-sans: "DM Sans", system-ui, sans-serif;
+      --font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-sans);
+      color: var(--ink);
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(13, 110, 110, 0.07), transparent),
+        linear-gradient(180deg, var(--bg) 0%, #eceae5 100%);
+    }
+
+    .page {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 3.5rem 1.5rem 4rem;
+    }
+
+    /* Header */
+    .header {
+      margin-bottom: 2.75rem;
+      max-width: 42rem;
+    }
+
+    .header__eyebrow {
+      display: inline-block;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      padding: 0.35rem 0.65rem;
+      background: var(--accent-soft);
+      border-radius: 4px;
+    }
+
+    .header__title {
+      margin: 0 0 0.75rem;
+      font-size: clamp(1.75rem, 4vw, 2.25rem);
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+      color: var(--ink);
+    }
+
+    .header__subtitle {
+      margin: 0 0 1rem;
+      font-size: 1.0625rem;
+      line-height: 1.5;
+      color: var(--ink-muted);
+      font-weight: 400;
+    }
+
+    .header__caption {
+      margin: 0;
+      font-size: 0.8125rem;
+      color: var(--ink-faint);
+      line-height: 1.5;
+    }
+
+    /* States */
+    .state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      min-height: 12rem;
+      padding: 2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      color: var(--ink-muted);
+      font-size: 0.9375rem;
+    }
+
+    .state--error {
+      flex-direction: column;
+      text-align: center;
+      color: #8b2e2e;
+      background: #fdf8f8;
+      border-color: #ecd8d8;
+    }
+
+    .state--error strong {
+      font-weight: 600;
+      color: #6b2222;
+    }
+
+    .state--error p {
+      margin: 0.25rem 0 0;
+      font-size: 0.875rem;
+      color: #9a4a4a;
+      max-width: 28rem;
+    }
+
+    .spinner {
+      width: 1.25rem;
+      height: 1.25rem;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Metrics */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .filter-bar { grid-template-columns: 1fr 1fr; }
+      .supporting-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      .metrics { grid-template-columns: 1fr; }
+      .page { padding-top: 2.5rem; }
+      .filter-bar { grid-template-columns: 1fr; }
+    }
+
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.375rem 1.5rem 1.5rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: border-color 0.2s ease;
+    }
+
+    .metric-card:hover {
+      border-color: #d4cfc4;
+    }
+
+    .metric-card__label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      line-height: 1.3;
+    }
+
+    .metric-card__value {
+      font-family: var(--font-mono);
+      font-size: clamp(1.5rem, 3vw, 1.875rem);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.15;
+    }
+
+    .metric-card__value--accent {
+      color: var(--accent);
+    }
+
+    .metric-card__hint {
+      font-size: 0.75rem;
+      color: var(--ink-faint);
+      margin-top: auto;
+      padding-top: 0.25rem;
+    }
+
+    /* Funnel chart */
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .filter-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem 1.1rem;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: 2fr 2fr minmax(180px, 1fr) auto;
+      gap: 1rem;
+      align-items: end;
+    }
+
+    .filter-group {
+      min-width: 0;
+    }
+
+    .filter-group__label {
+      margin: 0 0 0.45rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .chip {
+      border: 1px solid #dad4c9;
+      background: #f9f8f6;
+      color: var(--ink-muted);
+      border-radius: 999px;
+      padding: 0.38rem 0.68rem;
+      font-size: 0.81rem;
+      font-weight: 500;
+      line-height: 1;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .chip:hover {
+      border-color: #cfc7bb;
+      color: var(--ink);
+    }
+
+    .chip.is-active {
+      background: var(--accent-soft);
+      border-color: rgba(13, 110, 110, 0.38);
+      color: var(--accent);
+    }
+
+    .clear-filters-btn {
+      border: 1px solid #d8d2c6;
+      background: var(--surface);
+      color: var(--ink-muted);
+      border-radius: 10px;
+      padding: 0.56rem 0.8rem;
+      font-size: 0.84rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .clear-filters-btn:hover {
+      border-color: rgba(13, 110, 110, 0.38);
+      color: var(--accent);
+    }
+
+    .chart-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem 1.75rem 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .chart-section__title {
+      margin: 0 0 0.35rem;
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+
+    .chart-section__subtitle {
+      margin: 0 0 1.5rem;
+      font-size: 0.8125rem;
+      color: var(--ink-faint);
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 340px;
+      width: 100%;
+    }
+
+    .chart-empty {
+      margin: 0;
+      height: 340px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px dashed #ddd6ca;
+      border-radius: 10px;
+      color: var(--ink-faint);
+      background: #faf8f4;
+      font-size: 0.94rem;
+    }
+
+    .chart-insight {
+      margin: 1.25rem 0 0;
+      padding: 1rem 1.125rem;
+      font-size: 0.9375rem;
+      line-height: 1.55;
+      color: var(--ink-muted);
+      background: var(--line-soft);
+      border-left: 3px solid var(--line);
+      border-radius: 0 6px 6px 0;
+    }
+
+    .chart-insight strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .supporting-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .support-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.25rem 1.1rem;
+      box-shadow: var(--shadow);
+    }
+
+    .support-card__title {
+      margin: 0 0 0.35rem;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+
+    .support-card__caption {
+      margin: 0.8rem 0 0;
+      font-size: 0.78rem;
+      color: var(--ink-faint);
+    }
+
+    .support-wrap {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+
+    .support-empty {
+      margin: 0;
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px dashed #ddd6ca;
+      border-radius: 10px;
+      color: var(--ink-faint);
+      background: #faf8f4;
+      font-size: 0.94rem;
+    }
+
+    .ask-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem 1.4rem 1.2rem;
+      box-shadow: var(--shadow);
+    }
+
+    .ask-card__title {
+      margin: 0 0 0.35rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+
+    .ask-card__subtitle {
+      margin: 0 0 0.9rem;
+      font-size: 0.84rem;
+      color: var(--ink-faint);
+    }
+
+    .ask-input {
+      width: 100%;
+      min-height: 4.5rem;
+      resize: vertical;
+      border: 1px solid #d8d2c6;
+      border-radius: 10px;
+      padding: 0.65rem 0.7rem;
+      font: inherit;
+      font-size: 0.92rem;
+      background: #faf9f7;
+      color: var(--ink);
+      line-height: 1.45;
+    }
+
+    .ask-input:focus-visible {
+      outline: 2px solid rgba(13, 110, 110, 0.25);
+      outline-offset: 1px;
+    }
+
+    .ask-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.65rem;
+    }
+
+    .ask-actions {
+      margin-top: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .ask-btn {
+      border: 1px solid rgba(13, 110, 110, 0.42);
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 10px;
+      padding: 0.5rem 0.84rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .ask-btn:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .ask-hint {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--ink-faint);
+    }
+
+    .ask-response {
+      margin-top: 0.9rem;
+      border: 1px solid #ddd7cc;
+      border-radius: 10px;
+      background: #faf9f7;
+      padding: 0.8rem 0.9rem;
+      font-size: 0.91rem;
+      line-height: 1.55;
+      color: var(--ink-muted);
+      white-space: pre-wrap;
+    }
+
+    .ask-response.is-error {
+      border-color: #ecd8d8;
+      background: #fdf8f8;
+      color: #8b2e2e;
+    }
+
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <span class="header__eyebrow">Funding intelligence</span>
+      <h1 class="header__title">Venture capital is a funnel, not a ladder</h1>
+      <p class="header__subtitle">North American AI &amp; SaaS funding rounds, Seed to Series D.</p>
+      <p class="header__caption">Representative dataset modeling current funding patterns.</p>
+    </header>
+
+    <div id="loading" class="state" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>Loading funding data…</span>
+    </div>
+
+    <div id="error" class="state state--error" hidden role="alert">
+      <strong>Unable to load dataset</strong>
+      <p id="error-message">The CSV file could not be fetched. Serve this folder over HTTP (e.g. <code>npx serve .</code>) and ensure <code>ai_saas_funding_rounds.csv</code> is present.</p>
+    </div>
+
+    <div id="main-content" class="main-content" hidden>
+      <section class="filter-bar" aria-label="Filter rounds">
+        <div class="filter-group">
+          <p class="filter-group__label">Industry</p>
+          <div id="industry-chips" class="chip-row"></div>
+        </div>
+        <div class="filter-group">
+          <p class="filter-group__label">Stage</p>
+          <div id="stage-chips" class="chip-row"></div>
+        </div>
+        <div class="filter-group">
+          <p class="filter-group__label">Region</p>
+          <div id="region-chips" class="chip-row">
+            <button type="button" class="chip" data-value="United States">United States</button>
+            <button type="button" class="chip" data-value="Canada">Canada</button>
+          </div>
+        </div>
+        <button id="clear-filters" class="clear-filters-btn" type="button">Clear filters</button>
+      </section>
+
+      <section id="dashboard" class="metrics" aria-label="Key metrics">
+        <article class="metric-card">
+          <span class="metric-card__label">Total funding rounds</span>
+          <span class="metric-card__value" id="metric-rounds">—</span>
+          <span class="metric-card__hint">All recorded transactions</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-card__label">Total capital raised</span>
+          <span class="metric-card__value metric-card__value--accent" id="metric-total">—</span>
+          <span class="metric-card__hint">Sum across all rounds</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-card__label">Median round size</span>
+          <span class="metric-card__value" id="metric-median">—</span>
+          <span class="metric-card__hint">Middle of the distribution</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-card__label">Series B or later</span>
+          <span class="metric-card__value" id="metric-late">—</span>
+          <span class="metric-card__hint">Share of all rounds</span>
+        </article>
+      </section>
+
+      <section class="chart-section" aria-labelledby="funnel-title">
+        <h2 class="chart-section__title" id="funnel-title">The funnel: fewer companies, bigger checks</h2>
+        <p class="chart-section__subtitle">Round volume vs. median check size by funding stage</p>
+        <div class="chart-wrap">
+          <canvas id="funnel-chart" role="img" aria-label="Combined bar and line chart of rounds and median size by stage"></canvas>
+          <p id="chart-empty" class="chart-empty" hidden>No rounds match these filters.</p>
+        </div>
+        <p class="chart-insight" id="funnel-insight" aria-live="polite"></p>
+      </section>
+
+      <section class="supporting-grid" aria-label="Supporting breakdowns">
+        <article class="support-card">
+          <h3 class="support-card__title" id="sector-title">Where capital concentrates by sector</h3>
+          <div class="support-wrap">
+            <canvas id="sector-chart" role="img" aria-label="Horizontal bar chart of total capital by industry"></canvas>
+            <p id="sector-empty" class="support-empty" hidden>No rounds match these filters.</p>
+          </div>
+          <p class="support-card__caption" id="sector-caption">Rounds tagged with multiple industries count toward each.</p>
+        </article>
+        <article class="support-card">
+          <h3 class="support-card__title">Where capital concentrates by metro</h3>
+          <div class="support-wrap">
+            <canvas id="metro-chart" role="img" aria-label="Horizontal bar chart of top metros by total capital"></canvas>
+            <p id="metro-empty" class="support-empty" hidden>No rounds match these filters.</p>
+          </div>
+          <p class="support-card__caption">Top 8 metros by total capital raised.</p>
+        </article>
+      </section>
+
+      <section class="ask-card" aria-labelledby="ask-title">
+        <h3 class="ask-card__title" id="ask-title">Ask the data</h3>
+        <p class="ask-card__subtitle">Ask a question about the current view in plain English.</p>
+        <textarea
+          id="ask-input"
+          class="ask-input"
+          rows="3"
+          placeholder="Ask about patterns, concentration, differences, or oddities in this filtered slice..."
+        ></textarea>
+        <div class="ask-chip-row" id="ask-example-chips">
+          <button type="button" class="chip" data-question="Which sector has the steepest drop-off after seed?">Which sector has the steepest drop-off after seed?</button>
+          <button type="button" class="chip" data-question="What's striking about the geographic concentration?">What's striking about the geographic concentration?</button>
+          <button type="button" class="chip" data-question="Compare US vs Canadian funding in this slice.">Compare US vs Canadian funding in this slice.</button>
+          <button type="button" class="chip" data-question="What's unusual about late-stage rounds here?">What's unusual about late-stage rounds here?</button>
+        </div>
+        <div class="ask-actions">
+          <button id="ask-submit" class="ask-btn" type="button">Ask</button>
+          <p class="ask-hint">Tip: Press Cmd+Enter to submit.</p>
+        </div>
+        <div id="ask-response" class="ask-response" hidden></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const CSV_PATH = "ai_saas_funding_rounds.csv";
+    const LATE_STAGES = new Set(["Series B", "Series C", "Series D"]);
+    const FUNNEL_STAGES = ["Seed", "Series A", "Series B", "Series C", "Series D"];
+
+    let funnelChart = null;
+    let sectorChart = null;
+    let metroChart = null;
+    let rawRows = [];
+    let currentFilteredRows = [];
+    let activeFilters = {
+      industries: new Set(),
+      stages: new Set(),
+      regions: new Set(),
+    };
+
+    /** @param {string} raw e.g. "$45,700,000" */
+    function parseMoneyRaised(raw) {
+      if (raw == null || raw === "") return NaN;
+      const cleaned = String(raw).replace(/[$,\s]/g, "");
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : NaN;
+    }
+
+    /** @param {number} n */
+    function formatCompactCurrency(n) {
+      if (!Number.isFinite(n)) return "—";
+      const abs = Math.abs(n);
+      if (abs >= 1e9) {
+        const b = n / 1e9;
+        const digits = b >= 100 ? 0 : 1;
+        return "$" + b.toFixed(digits).replace(/\.0$/, "") + "B";
+      }
+      if (abs >= 1e6) {
+        const m = n / 1e6;
+        const digits = m >= 100 ? 0 : 1;
+        return "$" + m.toFixed(digits).replace(/\.0$/, "") + "M";
+      }
+      if (abs >= 1e3) {
+        const k = n / 1e3;
+        return "$" + k.toFixed(k >= 100 ? 0 : 1).replace(/\.0$/, "") + "K";
+      }
+      return "$" + Math.round(n).toLocaleString("en-US");
+    }
+
+    /** @param {number[]} values */
+    function median(values) {
+      const sorted = values.filter(Number.isFinite).slice().sort((a, b) => a - b);
+      const len = sorted.length;
+      if (len === 0) return NaN;
+      const mid = Math.floor(len / 2);
+      return len % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+    }
+
+    /** @param {Record<string, string>[]} rows */
+    function normalizeRows(rows) {
+      return rows.map((row) => {
+        const location = row["Organization Location"] || "";
+        const industries = (row["Organization Industries"] || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const country = location.includes(",")
+          ? location.split(",").pop().trim()
+          : location.trim();
+        return {
+          ...row,
+          _industries: industries,
+          _country: country,
+        };
+      });
+    }
+
+    /** @param {Record<string, string>[]} rows */
+    function computeFunnelStats(rows) {
+      return FUNNEL_STAGES.map((stage) => {
+        const stageRows = rows.filter((r) => r["Funding Type"] === stage);
+        const amounts = stageRows
+          .map((r) => parseMoneyRaised(r["Money Raised"]))
+          .filter(Number.isFinite);
+        return {
+          stage,
+          count: stageRows.length,
+          medianSize: median(amounts),
+        };
+      });
+    }
+
+    /** @param {Record<string, string>[]} rows */
+    function computeSectorTotals(rows) {
+      const totals = new Map();
+      rows.forEach((row) => {
+        const amount = parseMoneyRaised(row["Money Raised"]);
+        if (!Number.isFinite(amount)) return;
+        row._industries.forEach((industry) => {
+          totals.set(industry, (totals.get(industry) || 0) + amount);
+        });
+      });
+      return Array.from(totals.entries())
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value);
+    }
+
+    /** @param {Record<string, string>[]} rows */
+    function computeTopMetros(rows) {
+      const totals = new Map();
+      rows.forEach((row) => {
+        const amount = parseMoneyRaised(row["Money Raised"]);
+        if (!Number.isFinite(amount)) return;
+        const location = row["Organization Location"] || "";
+        const metro = location.split(",")[0].trim() || "Unknown";
+        totals.set(metro, (totals.get(metro) || 0) + amount);
+      });
+      return Array.from(totals.entries())
+        .map(([label, value]) => ({ label, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 8);
+    }
+
+    /** @param {Record<string, string>[]} rows */
+    function computeByCountry(rows) {
+      const countries = ["United States", "Canada"];
+      return countries.map((country) => {
+        const countryRows = rows.filter((row) => row._country === country);
+        const total = countryRows.reduce((sum, row) => {
+          const amount = parseMoneyRaised(row["Money Raised"]);
+          return sum + (Number.isFinite(amount) ? amount : 0);
+        }, 0);
+        return {
+          country,
+          rounds: countryRows.length,
+          total_capital_usd: Math.round(total),
+        };
+      });
+    }
+
+    function currentScopeSummary() {
+      return {
+        industries: activeFilters.industries.size > 0
+          ? Array.from(activeFilters.industries).sort((a, b) => a.localeCompare(b))
+          : "all",
+        stages: activeFilters.stages.size > 0
+          ? FUNNEL_STAGES.filter((stage) => activeFilters.stages.has(stage))
+          : "all",
+        regions: activeFilters.regions.size > 0
+          ? Array.from(activeFilters.regions).sort((a, b) => a.localeCompare(b))
+          : "all",
+      };
+    }
+
+    /** @param {Record<string, string>[]} rows */
+    function buildQuestionSummary(rows) {
+      const metrics = computeMetrics(rows);
+      const funnel = computeFunnelStats(rows).map((item) => ({
+        stage: item.stage,
+        count: item.count,
+        median_usd: Number.isFinite(item.medianSize) ? Math.round(item.medianSize) : 0,
+      }));
+      const sectors = computeSectorTotals(rows).map((item) => ({
+        industry: item.label,
+        total_capital_usd: Math.round(item.value),
+      }));
+      const metros = computeTopMetros(rows).map((item) => ({
+        metro: item.label,
+        total_capital_usd: Math.round(item.value),
+      }));
+
+      return {
+        scope: currentScopeSummary(),
+        totals: {
+          rounds: metrics.roundCount,
+          total_capital_usd: Math.round(metrics.total),
+          median_round_usd: Number.isFinite(metrics.medianRound) ? Math.round(metrics.medianRound) : 0,
+          pct_series_b_plus: metrics.latePct,
+        },
+        funnel,
+        sectors,
+        top_metros: metros,
+        by_country: computeByCountry(rows),
+      };
+    }
+
+    function setAskResponse(message, isError) {
+      const box = document.getElementById("ask-response");
+      box.hidden = false;
+      box.textContent = message;
+      box.classList.toggle("is-error", Boolean(isError));
+    }
+
+    async function submitQuestion() {
+      const input = document.getElementById("ask-input");
+      const submit = document.getElementById("ask-submit");
+      const question = input.value.trim();
+
+      if (!question) {
+        setAskResponse("Please enter a question first.", true);
+        return;
+      }
+
+      setAskResponse("Thinking…", false);
+      submit.disabled = true;
+
+      try {
+        const summary = buildQuestionSummary(currentFilteredRows);
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ question, summary }),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          setAskResponse(data.error || "Something went wrong while generating an answer.", true);
+          return;
+        }
+        if (data.answer) {
+          setAskResponse(data.answer, false);
+          return;
+        }
+        setAskResponse(data.error || "No answer was returned.", true);
+      } catch {
+        setAskResponse("Couldn't reach the AI service. This works once deployed to Vercel.", true);
+      } finally {
+        submit.disabled = false;
+      }
+    }
+
+    /** @param {{ stage: string, count: number, medianSize: number }[]} stats */
+    function buildFunnelInsight(stats) {
+      const seed = stats[0];
+      const seriesD = stats[stats.length - 1];
+      if (!seed.count || !seriesD.count || !Number.isFinite(seed.medianSize) || !Number.isFinite(seriesD.medianSize) || seed.medianSize === 0) {
+        return "Insufficient data to summarize the Seed-to-Series D contrast.";
+      }
+      const pctFall = Math.round((1 - seriesD.count / seed.count) * 100);
+      const growthX = Math.round(seriesD.medianSize / seed.medianSize);
+      return (
+        "From Seed to Series D, the number of rounds falls ~" +
+        pctFall +
+        "% while the median check grows ~" +
+        growthX +
+        "x."
+      );
+    }
+
+    function initFunnelChart() {
+      const canvas = document.getElementById("funnel-chart");
+      const ctx = canvas.getContext("2d");
+
+      Chart.defaults.font.family = '"DM Sans", system-ui, sans-serif';
+      Chart.defaults.color = "#5c6168";
+
+      funnelChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: FUNNEL_STAGES,
+          datasets: [
+            {
+              type: "bar",
+              label: "Number of rounds",
+              data: [0, 0, 0, 0, 0],
+              backgroundColor: "rgba(13, 110, 110, 0.88)",
+              hoverBackgroundColor: "rgba(13, 110, 110, 1)",
+              borderRadius: 6,
+              maxBarThickness: 56,
+              yAxisID: "y",
+              order: 2,
+            },
+            {
+              type: "line",
+              label: "Median round size",
+              data: [0, 0, 0, 0, 0],
+              borderColor: "#b85c38",
+              backgroundColor: "#b85c38",
+              pointBackgroundColor: "#ffffff",
+              pointBorderColor: "#b85c38",
+              pointBorderWidth: 2,
+              pointRadius: 5,
+              pointHoverRadius: 7,
+              borderWidth: 2.5,
+              tension: 0.2,
+              yAxisID: "y1",
+              order: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: {
+              position: "top",
+              align: "end",
+              labels: {
+                usePointStyle: true,
+                pointStyle: "circle",
+                padding: 18,
+                font: { size: 12, weight: "500" },
+              },
+            },
+            tooltip: {
+              backgroundColor: "#1a1c1e",
+              titleFont: { size: 13, weight: "600" },
+              bodyFont: { size: 12 },
+              padding: 12,
+              cornerRadius: 8,
+              callbacks: {
+                label(context) {
+                  const label = context.dataset.label || "";
+                  if (context.dataset.yAxisID === "y1") {
+                    return label + ": " + formatCompactCurrency(context.parsed.y);
+                  }
+                  return label + ": " + context.parsed.y.toLocaleString("en-US");
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: {
+                font: { size: 12, weight: "500" },
+                color: "#1a1c1e",
+              },
+            },
+            y: {
+              position: "left",
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Number of rounds",
+                font: { size: 11, weight: "600" },
+                color: "#0d6e6e",
+                padding: { bottom: 8 },
+              },
+              grid: { color: "rgba(228, 224, 216, 0.9)" },
+              border: { display: false },
+              ticks: {
+                font: { family: '"IBM Plex Mono", monospace', size: 11 },
+                color: "#5c6168",
+                padding: 6,
+              },
+            },
+            y1: {
+              position: "right",
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: "Median round size",
+                font: { size: 11, weight: "600" },
+                color: "#b85c38",
+                padding: { bottom: 8 },
+              },
+              grid: { drawOnChartArea: false },
+              border: { display: false },
+              ticks: {
+                font: { family: '"IBM Plex Mono", monospace', size: 11 },
+                color: "#5c6168",
+                padding: 6,
+                callback(value) {
+                  return formatCompactCurrency(Number(value));
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    /** @param {{ stage: string, count: number, medianSize: number }[]} stats */
+    function updateFunnelChart(stats) {
+      if (!funnelChart) initFunnelChart();
+      const counts = stats.map((s) => s.count);
+      const medians = stats.map((s) => (Number.isFinite(s.medianSize) ? s.medianSize : 0));
+      funnelChart.data.datasets[0].data = counts;
+      funnelChart.data.datasets[1].data = medians;
+      funnelChart.update();
+    }
+
+    function initSectorChart() {
+      const canvas = document.getElementById("sector-chart");
+      const ctx = canvas.getContext("2d");
+      sectorChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: "Total capital raised",
+              data: [],
+              backgroundColor: "rgba(13, 110, 110, 0.88)",
+              hoverBackgroundColor: "rgba(13, 110, 110, 1)",
+              borderRadius: 6,
+              borderSkipped: false,
+              maxBarThickness: 26,
+            },
+          ],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "#1a1c1e",
+              bodyFont: { size: 12 },
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label(context) {
+                  return "Total: " + formatCompactCurrency(context.parsed.x);
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              grid: { color: "rgba(228, 224, 216, 0.9)" },
+              border: { display: false },
+              ticks: {
+                font: { family: '"IBM Plex Mono", monospace', size: 11 },
+                callback(value) {
+                  return formatCompactCurrency(Number(value));
+                },
+              },
+            },
+            y: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: { font: { size: 11, weight: "500" }, color: "#1a1c1e" },
+            },
+          },
+        },
+      });
+    }
+
+    function initMetroChart() {
+      const canvas = document.getElementById("metro-chart");
+      const ctx = canvas.getContext("2d");
+      metroChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: "Total capital raised",
+              data: [],
+              backgroundColor: "rgba(13, 110, 110, 0.88)",
+              hoverBackgroundColor: "rgba(13, 110, 110, 1)",
+              borderRadius: 6,
+              borderSkipped: false,
+              maxBarThickness: 26,
+            },
+          ],
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "#1a1c1e",
+              bodyFont: { size: 12 },
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label(context) {
+                  return "Total: " + formatCompactCurrency(context.parsed.x);
+                },
+              },
+            },
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              grid: { color: "rgba(228, 224, 216, 0.9)" },
+              border: { display: false },
+              ticks: {
+                font: { family: '"IBM Plex Mono", monospace', size: 11 },
+                callback(value) {
+                  return formatCompactCurrency(Number(value));
+                },
+              },
+            },
+            y: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: { font: { size: 11, weight: "500" }, color: "#1a1c1e" },
+            },
+          },
+        },
+      });
+    }
+
+    /** @param {{label: string, value: number}[]} points */
+    function updateSectorChart(points) {
+      if (!sectorChart) initSectorChart();
+      sectorChart.data.labels = points.map((p) => p.label);
+      sectorChart.data.datasets[0].data = points.map((p) => p.value);
+      sectorChart.update();
+    }
+
+    /** @param {{label: string, value: number}[]} points */
+    function updateMetroChart(points) {
+      if (!metroChart) initMetroChart();
+      metroChart.data.labels = points.map((p) => p.label);
+      metroChart.data.datasets[0].data = points.map((p) => p.value);
+      metroChart.update();
+    }
+
+    /** @param {Record<string, string>[]} rows */
+    function computeMetrics(rows) {
+      const amounts = rows.map((r) => parseMoneyRaised(r["Money Raised"]));
+      const validAmounts = amounts.filter(Number.isFinite);
+      const total = validAmounts.reduce((sum, v) => sum + v, 0);
+      const lateCount = rows.filter((r) => LATE_STAGES.has(r["Funding Type"])).length;
+      const roundCount = rows.length;
+
+      return {
+        roundCount,
+        total,
+        medianRound: median(validAmounts),
+        latePct: roundCount > 0 ? Math.round((lateCount / roundCount) * 100) : 0,
+      };
+    }
+
+    /** @param {Record<string, string>[]} rows */
+    function getDistinctIndustries(rows) {
+      const set = new Set();
+      rows.forEach((row) => row._industries.forEach((industry) => set.add(industry)));
+      return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }
+
+    function renderFilterChips() {
+      const industryRoot = document.getElementById("industry-chips");
+      const stageRoot = document.getElementById("stage-chips");
+      industryRoot.innerHTML = "";
+      stageRoot.innerHTML = "";
+
+      const industries = getDistinctIndustries(rawRows);
+      industries.forEach((industry) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "chip";
+        btn.textContent = industry;
+        btn.dataset.value = industry;
+        industryRoot.appendChild(btn);
+      });
+
+      FUNNEL_STAGES.forEach((stage) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "chip";
+        btn.textContent = stage;
+        btn.dataset.value = stage;
+        stageRoot.appendChild(btn);
+      });
+    }
+
+    function syncFilterUI() {
+      document.querySelectorAll("#industry-chips .chip").forEach((chip) => {
+        chip.classList.toggle("is-active", activeFilters.industries.has(chip.dataset.value));
+      });
+      document.querySelectorAll("#stage-chips .chip").forEach((chip) => {
+        chip.classList.toggle("is-active", activeFilters.stages.has(chip.dataset.value));
+      });
+      document.querySelectorAll("#region-chips .chip").forEach((chip) => {
+        chip.classList.toggle("is-active", activeFilters.regions.has(chip.dataset.value));
+      });
+    }
+
+    /** @param {Record<string, string>[]} rows */
+    function filterRows(rows) {
+      return rows.filter((row) => {
+        const industryMatch = activeFilters.industries.size === 0 ||
+          row._industries.some((industry) => activeFilters.industries.has(industry));
+        const stageMatch = activeFilters.stages.size === 0 ||
+          activeFilters.stages.has(row["Funding Type"]);
+        const regionMatch = activeFilters.regions.size === 0 ||
+          activeFilters.regions.has(row._country);
+        return industryMatch && stageMatch && regionMatch;
+      });
+    }
+
+    function setChartEmptyState(isEmpty) {
+      document.getElementById("chart-empty").hidden = !isEmpty;
+      document.getElementById("funnel-chart").hidden = isEmpty;
+    }
+
+    function setSupportChartsEmptyState(isEmpty) {
+      document.getElementById("sector-empty").hidden = !isEmpty;
+      document.getElementById("sector-chart").hidden = isEmpty;
+      document.getElementById("metro-empty").hidden = !isEmpty;
+      document.getElementById("metro-chart").hidden = isEmpty;
+    }
+
+    function applyFiltersAndRender() {
+      const rows = filterRows(rawRows);
+      currentFilteredRows = rows;
+      const metrics = computeMetrics(rows);
+      const hasIndustrySelection = activeFilters.industries.size > 0;
+
+      document.getElementById("sector-title").textContent = hasIndustrySelection
+        ? "Co-tagged sectors in selected rounds"
+        : "Where capital concentrates by sector";
+      document.getElementById("sector-caption").textContent = hasIndustrySelection
+        ? "Shows the other sectors these rounds also touch. The selected sector(s) appear large by definition."
+        : "Rounds tagged with multiple industries count toward each.";
+
+      document.getElementById("metric-rounds").textContent =
+        metrics.roundCount.toLocaleString("en-US");
+      document.getElementById("metric-total").textContent =
+        formatCompactCurrency(metrics.total);
+      document.getElementById("metric-median").textContent =
+        formatCompactCurrency(metrics.medianRound);
+      document.getElementById("metric-late").textContent =
+        metrics.latePct + "%";
+
+      if (rows.length === 0) {
+        setChartEmptyState(true);
+        setSupportChartsEmptyState(true);
+        document.getElementById("funnel-insight").textContent = "No rounds match these filters.";
+        return;
+      }
+
+      setChartEmptyState(false);
+      setSupportChartsEmptyState(false);
+      const stats = computeFunnelStats(rows);
+      updateFunnelChart(stats);
+      document.getElementById("funnel-insight").textContent = buildFunnelInsight(stats);
+      updateSectorChart(computeSectorTotals(rows));
+      updateMetroChart(computeTopMetros(rows));
+    }
+
+    function showLoading() {
+      document.getElementById("loading").hidden = false;
+      document.getElementById("error").hidden = true;
+      document.getElementById("main-content").hidden = true;
+    }
+
+    function showError(message) {
+      document.getElementById("loading").hidden = true;
+      document.getElementById("error").hidden = false;
+      document.getElementById("main-content").hidden = true;
+      document.getElementById("error-message").textContent = message;
+    }
+
+    function bindFilterEvents() {
+      document.getElementById("industry-chips").addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLButtonElement)) return;
+        const value = target.dataset.value;
+        if (!value) return;
+        if (activeFilters.industries.has(value)) activeFilters.industries.delete(value);
+        else activeFilters.industries.add(value);
+        syncFilterUI();
+        applyFiltersAndRender();
+      });
+
+      document.getElementById("stage-chips").addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLButtonElement)) return;
+        const value = target.dataset.value;
+        if (!value) return;
+        if (activeFilters.stages.has(value)) activeFilters.stages.delete(value);
+        else activeFilters.stages.add(value);
+        syncFilterUI();
+        applyFiltersAndRender();
+      });
+
+      document.getElementById("region-chips").addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLButtonElement)) return;
+        const value = target.dataset.value;
+        if (!value) return;
+        if (activeFilters.regions.has(value)) activeFilters.regions.delete(value);
+        else activeFilters.regions.add(value);
+        syncFilterUI();
+        applyFiltersAndRender();
+      });
+
+      document.getElementById("clear-filters").addEventListener("click", () => {
+        activeFilters = {
+          industries: new Set(),
+          stages: new Set(),
+          regions: new Set(),
+        };
+        syncFilterUI();
+        applyFiltersAndRender();
+      });
+
+      document.getElementById("ask-submit").addEventListener("click", () => {
+        submitQuestion();
+      });
+
+      document.getElementById("ask-example-chips").addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLButtonElement)) return;
+        const question = target.dataset.question;
+        if (!question) return;
+        const input = document.getElementById("ask-input");
+        input.value = question;
+        input.focus();
+      });
+
+      document.getElementById("ask-input").addEventListener("keydown", (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          event.preventDefault();
+          submitQuestion();
+        }
+      });
+    }
+
+    function showDashboard() {
+      document.getElementById("loading").hidden = true;
+      document.getElementById("error").hidden = true;
+      document.getElementById("main-content").hidden = false;
+      syncFilterUI();
+      applyFiltersAndRender();
+    }
+
+    async function loadData() {
+      showLoading();
+
+      let response;
+      try {
+        response = await fetch(CSV_PATH);
+      } catch {
+        showError(
+          "Network error while fetching the dataset. Open this page via a local server (file:// blocks fetch)."
+        );
+        return;
+      }
+
+      if (!response.ok) {
+        showError(
+          `Failed to load ${CSV_PATH} (HTTP ${response.status}). Check that the file exists in this folder.`
+        );
+        return;
+      }
+
+      const text = await response.text();
+
+      const parsed = Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (h) => h.trim(),
+      });
+
+      if (parsed.errors.length > 0) {
+        console.warn("CSV parse warnings:", parsed.errors);
+      }
+
+      rawRows = normalizeRows(parsed.data.filter((row) => row["Organization Name"]));
+      renderFilterChips();
+      bindFilterEvents();
+      showDashboard();
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
