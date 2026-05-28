@@ -34,6 +34,14 @@ in this summary.
 DATA SUMMARY:
 ${JSON.stringify(summary)}
 
+Note on interpreting sector_stage_breakdown: when ONE industry is in the scope filter,
+this breakdown shows CO-TAGGING patterns — rows for industries other than the filtered
+one represent only the subset of filtered rounds also tagged with that other industry.
+It is NOT a per-sector funnel comparison in this case. When ZERO or MULTIPLE industries
+are filtered, the breakdown does represent per-sector funnels as expected. If asked a
+cross-sector comparison question while only one industry is filtered, note that the
+comparison isn't meaningful in this scope and suggest removing the industry filter.
+
 USER'S QUESTION:
 ${questionRaw}
 
