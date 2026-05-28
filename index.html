@@ -151,16 +151,17 @@
       gap: 1rem;
     }
 
-    @media (max-width: 900px) {
-      .metrics { grid-template-columns: repeat(2, 1fr); }
-      .filter-bar { grid-template-columns: 1fr 1fr; }
-      .supporting-grid { grid-template-columns: 1fr; }
-    }
-
-    @media (max-width: 480px) {
-      .metrics { grid-template-columns: 1fr; }
-      .page { padding-top: 2.5rem; }
-      .filter-bar { grid-template-columns: 1fr; }
+    .mobile-hint {
+      display: none;
+      margin: 0 0 1rem;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      text-align: center;
+      color: var(--ink-faint);
+      background: rgba(255, 255, 255, 0.55);
+      border: 1px solid var(--border);
+      border-radius: 8px;
     }
 
     .metric-card {
@@ -489,11 +490,156 @@
       color: #8b2e2e;
     }
 
+    @media (max-width: 768px) {
+      .mobile-hint {
+        display: block;
+      }
+
+      .page {
+        padding: 2rem 1rem 2.5rem;
+      }
+
+      .header {
+        margin-bottom: 1.75rem;
+      }
+
+      .header__eyebrow {
+        margin-bottom: 0.65rem;
+        font-size: 0.625rem;
+        padding: 0.3rem 0.55rem;
+      }
+
+      .header__title {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .header__subtitle {
+        font-size: 0.9375rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .header__caption {
+        font-size: 0.75rem;
+      }
+
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-bar {
+        grid-template-columns: 1fr;
+        padding: 0.75rem 0.85rem 0.85rem;
+        gap: 0.75rem;
+      }
+
+      .chip-row {
+        gap: 0.4rem;
+      }
+
+      .chip {
+        padding: 0.34rem 0.58rem;
+        font-size: 0.76rem;
+      }
+
+      .clear-filters-btn {
+        width: 100%;
+        justify-self: stretch;
+      }
+
+      .main-content {
+        gap: 1.5rem;
+      }
+
+      .chart-section {
+        padding: 1.25rem 1rem 1rem;
+        overflow: hidden;
+      }
+
+      .chart-section__title {
+        font-size: 1rem;
+      }
+
+      .chart-section__subtitle {
+        margin-bottom: 1rem;
+        font-size: 0.75rem;
+      }
+
+      .chart-wrap {
+        height: 280px;
+        max-width: 100%;
+        overflow: hidden;
+      }
+
+      .chart-wrap canvas {
+        max-width: 100%;
+      }
+
+      .chart-empty {
+        height: 280px;
+        font-size: 0.875rem;
+        padding: 0 1rem;
+        text-align: center;
+      }
+
+      .chart-insight {
+        font-size: 0.875rem;
+        padding: 0.85rem 0.95rem;
+      }
+
+      .supporting-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .support-card {
+        padding: 1rem 1rem 0.9rem;
+        overflow: hidden;
+      }
+
+      .support-wrap {
+        height: 260px;
+        max-width: 100%;
+        overflow: hidden;
+      }
+
+      .support-wrap canvas {
+        max-width: 100%;
+      }
+
+      .support-empty {
+        height: 260px;
+        font-size: 0.875rem;
+        padding: 0 1rem;
+        text-align: center;
+      }
+
+      .ask-card {
+        padding: 1.1rem 1rem 1rem;
+      }
+
+      .ask-chip-row {
+        gap: 0.4rem;
+      }
+
+      .ask-chip-row .chip {
+        font-size: 0.74rem;
+        padding: 0.32rem 0.52rem;
+        line-height: 1.25;
+        white-space: normal;
+        text-align: left;
+      }
+
+      .ask-actions {
+        flex-wrap: wrap;
+      }
+    }
+
     [hidden] { display: none !important; }
   </style>
 </head>
 <body>
   <div class="page">
+    <p class="mobile-hint">Best viewed on desktop for full interactivity</p>
     <header class="header">
       <span class="header__eyebrow">Funding intelligence</span>
       <h1 class="header__title">Venture capital is a funnel, not a ladder</h1>
